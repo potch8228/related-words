@@ -1,41 +1,108 @@
 # -*- coding: utf8 -*-
 
-from xml.dom import minidom
+import csv
 import json
+import urllib2
+from xml.dom import minidom
 
-import httplib
+SEARCH_URL       = 'http://suggestqueries.google.com/complete/search?client=firefox&q='
+SEARCH_URL_JSON  = 'http://suggestqueries.google.com/complete/search?output=toolbar&q='
 
-SEARCH_URL       = 'http://suggestqueries.google.com/complete/search?client=firefox&'
-SEARCH_URL_JSON  = 'http://suggestqueries.google.com/complete/search?output=toolbar&'
-SEARCH_QUERY     = 'q='
-# XML_RESULT_FIELD = ('CompleteSuggestion', 'suggestion', 'data')
+def build_search_url(request_query, json=False):
+    """Build up search url that is passed to defined url"""
+    if request_query is None:
+        raise ValueException('No request_query')
 
-def build_search_url(query=null, json=False):
     if json:
-        return SEARCH_URL_JSON + SEARCH_QUERY + request_query
-    else:
-        return SEARCH_URL + SEARCH_QUERY + request_query
+        return SEARCH_URL_JSON + request_query
 
-def fetch_search_url()
+    return SEARCH_URL + request_query
 
-def parse_search_result(search_result_list=null, json=False):
-    if search_result_list is None: # && len(search_result_list) is 0:
-        return None
+def fetch_search_url(url):
+    if url is None:
+        raise ValueException('No url')
 
-    if len(search_result_list) is 0:
-        return None
+    with closing(urllib2.openurl(url)) as response:
+        return response.read()
+
+def parse_search_result(search_result_list, json=False):
+    """Try to parse JSON/XML data as python data structure
+
+    Basically, this function will return the array structure of
+    what search engine returned.
+    """
+    if search_result_list is None or len(search_result_list) is 0:
+        raise ValueException('No search_result')
 
     if json:
         return json.loads(search_result_list)[1]
-    
-#    return_list = []
-    search_result = minidom.parseString(search_result_list).getElementsByTagName('suggestion')
-#    search_result = search_result_dom.getElementsByTagName('suggestion');
-#    for r in search_result
-    return [result.attibutes['data'].value for result in search_result]
 
+    search_result = minidom.parseString(search_result_list).getElementsByTagName('suggestion')
+    return set([result.attibutes['data'].value for result in search_result])
+
+def search_relative(input_list, result_dict = {}):
+    """Actual search function to organize all of functions above(main function?)
+
+    dispatch the search urls as much as input_list has
+    make an output list/set which mapped to input_list keywords
+    """
+    if input_list is None:
+        raise ValueException('No input_list')
+
+    for word in input_list:
+        result_dict[word] = fetch_search_url(build_search_url(word))
+    return False
+
+def _check_dict_depth(word_dict, max_deep = 3):
+    """Checks if any of dict entries reaches max_deep
+    Default deepness is 3
+    """
+    if result_dict is None:
+        raise ValueException('No word_dict')
+
+    for key,collections in word_dict
+        return len(collections) is max_deep
+
+    return False
+
+def read_csv(file_path):
+    if file_path is None:
+        raise ValueException('No file_path')
+
+    input_list = []
+    with open(file_path, 'r') as csv_file:
+        for input_line in csv.reader(csv_file):
+           input_list.extend(input_line)
+
+    return input_list
+
+def output_format(search_data):
+    """build up string object with comma splited, multi-linebroken string"""
+    if search_data is None:
+        raise ValueException('No search_data')
+
+    _output = ''
+    return False
+
+def write_csv(file_path, search_data):
+    """Open the file descripter
+    write out all search data, the search data will be in either list or dict
+    Close the file descripter
+    """
+    if file_path is None:
+        raise ValueException('No file_path to write')
+
+    with open(file_path, 'w') as csv_file:
+        csv_file.write(output_format(search_data))
 
 def main():
+    """TODO List:
+    Get the initial inputs from given CSV file in list structure
+    Throw these inputs into google suggestion
+    - Get these results in list form
+    - recursively find words, use dict and set
+    Gather the results in CSV format, and output(on stdout?)
+    """
     echo 'hello!'
 
 if __name__ == '__main__':
