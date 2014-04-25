@@ -9,8 +9,8 @@ class TestRelatedWord(unittest.TestCase):
 #        self.assertEqual(len(result_list), 10, 'Probably suggestions are less than 10')
 
     def test_search_relative(self):
-#        sample_list = [u'ロキソニン', u'ボルタレン']
-        sample_list = [u'test', u'sample']
+        sample_list = [u'ロキソニン', u'ボルタレン']
+#        sample_list = [u'test', u'sample']
         result_dict = related_word.search_relative(sample_list)
         self.assertNotEqual(len(result_dict), 0, 'Probably good structure')
         print result_dict

@@ -6,26 +6,24 @@ import urllib2
 from xml.dom import minidom
 from contextlib import closing
 
-SEARCH_URL_JSON  = 'http://suggestqueries.google.com/complete/search?client=firefox&q="'
-SEARCH_URL       = 'http://suggestqueries.google.com/complete/search?client=toolbar&q="'
+BASE_URL_JSON  = 'http://suggestqueries.google.com/complete/search?client=firefox&q='
+BASE_URL       = 'http://suggestqueries.google.com/complete/search?client=toolbar&q='
 
 def build_search_url(request_query, json=False):
     """Build up search url that is passed to defined url"""
     if request_query is None:
         raise ValueException('No request_query')
 
+    query = urllib2.quote('"' + request_query.encode('utf-8') + '"')
     if json:
-        return SEARCH_URL_JSON + request_query + '"'
-
-    return SEARCH_URL + request_query + '"'
+        return BASE_URL_JSON + query
+    return BASE_URL + query
 
 def fetch_search_url(url):
-    print url
-    import pdb; pdb.set_trace()
     if url is None:
         raise ValueException('No url')
 
-    with closing(urllib2.urlopen(url.encode('utf-8',))) as response:
+    with closing(urllib2.urlopen(url.encode('utf-8'))) as response:
         return response.read()
 
 def parse_search_result(search_result_list, json=False):
@@ -41,8 +39,7 @@ def parse_search_result(search_result_list, json=False):
         return json.loads(search_result_list)[1]
 
     search_result = minidom.parseString(search_result_list).getElementsByTagName('suggestion')
-    # return set([result.attributes['data'].value for result in search_result])
-    return [result.attributes['data'].value for result in search_result]
+    return set([result.attributes['data'].value for result in search_result])
 
 def search_relative(input_list, result_dict = {}):
     """Actual search function to organize all of functions above(main function?)
@@ -53,28 +50,38 @@ def search_relative(input_list, result_dict = {}):
     if input_list is None:
         raise ValueException('No input_list')
 
-    print input_list
-    print "\n"
-    print result_dict
-    import pdb; pdb.set_trace()
-    if len(input_list) is 0 or _check_dict_depth(result_dict):
+    if len(input_list) is 0 \
+            or _check_dict_depth(result_dict):
         return result_dict
 
     for word in input_list:
+        if _check_combo_length(word):
+            continue
         fetch_result = parse_search_result(fetch_search_url(build_search_url(word)))
-        print fetch_result
-        import pdb; pdb.set_trace()
-        key          = word.split(None,1)[0]
-        if key not in result_dict:
-            result_dict[key] = fetch_result
-        result_dict[key].append(fetch_result)
-        if key in fetch_result:
-            fetch_result.remove(key)
+        if word in fetch_result:
+            fetch_result.remove(word)
+        if word not in result_dict:
+            result_dict[word] = fetch_result
+        else:
+            result_dict[word] = set(result_dict[word]).union(fetch_result)
         search_relative(fetch_result, result_dict)
+    return result_dict
 
-#    return False
+def _check_combo_length(query_word, max_combo=3):
+    if query_word is None:
+        raise ValueException('No query')
+    return len(query_word.split()) > max_combo
 
-def _check_dict_depth(word_dict, max_deep = 3):
+def _check_word_combo_length(query_set, max_combo=3):
+    if query_set is None:
+        raise ValueException('No query')
+
+    for item in query_set:
+        if len(item.split()) > max_combo:
+            return True
+    return False
+
+def _check_dict_depth(word_dict, max_deep=3):
     """Checks if any of dict entries reaches max_deep
     Default deepness is 3
     Since the result word is either a single word or a combination of
@@ -84,10 +91,10 @@ def _check_dict_depth(word_dict, max_deep = 3):
     if word_dict is None:
         raise ValueException('No word_dict')
 
-    for key, collections in word_dict.iteritems():
-        return len(collections) is max_deep
-
-    return False
+    result = False
+    for values in word_dict.values():
+        result = _check_word_combo_length(values)
+    return result
 
 def read_csv(file_path):
     if file_path is None:
@@ -127,7 +134,7 @@ def main():
     - recursively find words, use dict and set
     Gather the results in CSV format, and output(on stdout?)
     """
-    print 'hello!'
+    pass
 
 if __name__ == '__main__':
     main()
