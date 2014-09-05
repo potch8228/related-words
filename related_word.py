@@ -15,6 +15,8 @@ parser.add_argument('input_csv',  help='input word list in CSV file format')
 parser.add_argument('output_csv', help='output CSV file')
 parser.add_argument('-c', '--combination', \
         type=int, default=3, help='maximum word combinations to search')
+parser.add_argument('-e', '--encoding', \
+        type=str, default='utf-8', help='output file encoding')
 
 def build_search_url(request_query, json=False):
     """Build up search url that is passed to defined url"""
@@ -113,7 +115,7 @@ def read_csv(file_path, encoding='shift_jis'):
         raise ValueException('No file_path')
 
     input_list = []
-    with open(file_path, 'rb') as csv_file:
+    with open(file_path, 'r') as csv_file:
         reader = UnicodeReader(csv_file, encoding=encoding)
         for input_data in reader:
             input_list.extend(input_data)
@@ -124,7 +126,7 @@ def write_csv(file_path, search_data, encoding='shift_jis'):
     if file_path is None:
         raise ValueException('No file_path to write')
 
-    with open(file_path, 'wb') as csv_file:
+    with open(file_path, 'w') as csv_file:
         writer = UnicodeWriter(csv_file, encoding=encoding)
         for key in sorted(search_data):
             _output_list = list(search_data[key])
@@ -200,7 +202,8 @@ def main():
 
     write_csv(args.output_csv, \
             search_relative( \
-                read_csv(args.input_csv), max_combo=args.combination \
+                read_csv(args.input_csv, encoding=args.encoding)\
+                , max_combo=args.combination \
             ) \
     )
 
